@@ -31,6 +31,7 @@ import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.Config;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
+import com.google.enterprise.adaptor.DocRequest;
 import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.IOHelper;
 import com.google.enterprise.adaptor.InvalidConfigurationException;
@@ -45,6 +46,8 @@ import com.google.enterprise.adaptor.sharepoint.SharePointAdaptor.SharePointUrl;
 import com.google.enterprise.adaptor.sharepoint.SharePointAdaptor.SiteUserIdMappingCallable;
 import com.google.enterprise.adaptor.sharepoint.SharePointAdaptor.SoapFactory;
 import com.google.enterprise.adaptor.testing.RecordingDocIdPusher;
+import com.google.enterprise.adaptor.testing.RecordingResponse;
+import com.google.enterprise.adaptor.testing.RecordingResponse.State;
 import com.google.enterprise.adaptor.testing.UnsupportedDocIdPusher;
 
 import com.microsoft.schemas.sharepoint.soap.ItemData;
@@ -903,11 +906,11 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://wronghost:1/"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
-    assertTrue(response.isNotFound());
+    assertEquals(State.NOT_FOUND, response.getState());
   }
 
   @Test
@@ -929,10 +932,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(new DocId(wrongPage));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    DocRequest request = new DocRequest(new DocId(wrongPage));
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
-    assertTrue(response.isNotFound());
+    assertEquals(State.NOT_FOUND, response.getState());
   }
   
   @Test
@@ -972,17 +975,17 @@ public class SharePointAdaptorTest {
         "http://localhost:1/sites/SiteCollection");
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest requestOtherSC = new GetContentsRequest(
+    DocRequest requestOtherSC = new DocRequest(
         new DocId("http://localhost:1/sites/other"));
-    GetContentsResponse responseOtherSC = new GetContentsResponse(baos);
+    RecordingResponse responseOtherSC = new RecordingResponse(baos);
     adaptor.getDocContent(requestOtherSC, responseOtherSC);
-    assertTrue(responseOtherSC.isNotFound());
+    assertEquals(State.NOT_FOUND, responseOtherSC.getState());
     
-    GetContentsRequest requestRoot= new GetContentsRequest(
+    DocRequest requestRoot= new DocRequest(
         new DocId(""));
-    GetContentsResponse responseRoot = new GetContentsResponse(baos);
+    RecordingResponse responseRoot = new RecordingResponse(baos);
     adaptor.getDocContent(requestRoot, responseRoot);
-    assertTrue(responseRoot.isNotFound());
+    assertEquals(State.NOT_FOUND, responseRoot.getState());
     
   }
 
@@ -1007,8 +1010,8 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsResponse response = new GetContentsResponse(baos);
-    adaptor.getDocContent(new GetContentsRequest(new DocId("")), response);
+    RecordingResponse response = new RecordingResponse(baos);
+    adaptor.getDocContent(new DocRequest(new DocId("")), response);
     String responseString = new String(baos.toByteArray(), charset);
     final String golden = "<!DOCTYPE html>\n"
         + "<html><head><title>http://localhost:1/</title></head>"
@@ -1055,8 +1058,8 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsResponse response = new GetContentsResponse(baos);
-    adaptor.getDocContent(new GetContentsRequest(new DocId("")), response);
+    RecordingResponse response = new RecordingResponse(baos);
+    adaptor.getDocContent(new DocRequest(new DocId("")), response);
     String responseString = new String(baos.toByteArray(), charset);
     final String golden = "<!DOCTYPE html>\n"
         + "<html><head><title>http://localhost:1/</title></head>"
@@ -1112,8 +1115,8 @@ public class SharePointAdaptorTest {
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-    GetContentsResponse response = new GetContentsResponse(baos);
-    adaptor.getDocContent(new GetContentsRequest(new DocId("")), response);
+    RecordingResponse response = new RecordingResponse(baos);
+    adaptor.getDocContent(new DocRequest(new DocId("")), response);
     String responseString = new String(baos.toByteArray(), charset);
     final String golden = "<!DOCTYPE html>\n"
         + "<html><head><title>http://localhost:1/</title></head>"
@@ -1134,11 +1137,11 @@ public class SharePointAdaptorTest {
             NT_AUTHORITY_LOCAL_SERVICE)).build(), response.getAcl());
     assertNull(response.getDisplayUrl());
     // Request to fetch doc content from excluded site collection
-    GetContentsRequest requestOtherSC = new GetContentsRequest(
+    DocRequest requestOtherSC = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/web"));
-    GetContentsResponse responseOtherSC = new GetContentsResponse(baos);
+    RecordingResponse responseOtherSC = new RecordingResponse(baos);
     adaptor.getDocContent(requestOtherSC, responseOtherSC);
-    assertTrue(responseOtherSC.isNotFound());
+    assertEquals(State.NOT_FOUND, responseOtherSC.getState());
   }
 
   @Test
@@ -1239,12 +1242,12 @@ public class SharePointAdaptorTest {
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-    GetContentsResponse response = new GetContentsResponse(baos);
-    GetContentsRequest requestOtherSC = new GetContentsRequest(
+    RecordingResponse response = new RecordingResponse(baos);
+    DocRequest requestOtherSC = new DocRequest(
         new DocId("http://localhost:1/web"));
-    GetContentsResponse responseOtherSC = new GetContentsResponse(baos);
+    RecordingResponse responseOtherSC = new RecordingResponse(baos);
     adaptor.getDocContent(requestOtherSC, responseOtherSC);
-    assertTrue(responseOtherSC.isNotFound());
+    assertEquals(State.NOT_FOUND, responseOtherSC.getState());
   }
 
   @Test
@@ -1276,8 +1279,8 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsResponse response = new GetContentsResponse(baos);
-    adaptor.getDocContent(new GetContentsRequest(new DocId("")), response);
+    RecordingResponse response = new RecordingResponse(baos);
+    adaptor.getDocContent(new DocRequest(new DocId("")), response);
     String responseString = new String(baos.toByteArray(), charset);
     final String golden = "<!DOCTYPE html>\n"
         + "<html><head><title>http://localhost:1/</title></head>"
@@ -1375,8 +1378,8 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsResponse response = new GetContentsResponse(baos);
-    adaptor.getDocContent(new GetContentsRequest(new DocId("")), response);       
+    RecordingResponse response = new RecordingResponse(baos);
+    adaptor.getDocContent(new DocRequest(new DocId("")), response);       
     assertEquals(new Acl.Builder()
         .setEverythingCaseInsensitive()
         .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
@@ -1432,9 +1435,9 @@ public class SharePointAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
     String responseString = new String(baos.toByteArray(), charset);
     final String golden = "<!DOCTYPE html>\n"
@@ -1539,16 +1542,16 @@ public class SharePointAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response1 = new GetContentsResponse(baos);
-    GetContentsResponse response2 = new GetContentsResponse(baos);
+    RecordingResponse response1 = new RecordingResponse(baos);
     // First call returns 3 groups(Owners, Members with 1 user and Reviewers
     // with 1 user
     adaptor.getDocContent(request, response1);
     assertEquals(goldenGroups1, pusher.getGroupDefinitions());
 
-    // Second call returns 3 groups(Owners, Members with 2 users and Visitors)    
+    RecordingResponse response2 = new RecordingResponse(baos);
+    // Second call returns 3 groups(Owners, Members with 2 users and Visitors)
     adaptor.getDocContent(request, response2);
     assertEquals(goldenGroups2, pusher.getGroupDefinitions());
   }
@@ -1585,9 +1588,9 @@ public class SharePointAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
     String responseString = new String(baos.toByteArray(), charset);
     final String golden = "<!DOCTYPE html>\n"
@@ -1681,9 +1684,9 @@ public class SharePointAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
     String responseString = new String(baos.toByteArray(), charset);
     final String golden = "<!DOCTYPE html>\n"
@@ -1785,9 +1788,9 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/SubSite"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
    
     assertEquals(new Acl.Builder()
@@ -1849,9 +1852,9 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/SubSite"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
 
     assertEquals(new Acl.Builder()
@@ -1921,9 +1924,9 @@ public class SharePointAdaptorTest {
     // This populates the cache, but otherwise doesn't test anything new.
     siteData.setSiteDataSoap(siteDataState1);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
     assertEquals(new Acl.Builder()
         .setEverythingCaseInsensitive()
@@ -1937,7 +1940,7 @@ public class SharePointAdaptorTest {
 
     // Were we able to pick up the new user in the ACLs?
     siteData.setSiteDataSoap(siteDataState2);
-    response = new GetContentsResponse(new ByteArrayOutputStream());
+    response = new RecordingResponse(new ByteArrayOutputStream());
     adaptor.getDocContent(request, response);
     assertEquals(new Acl.Builder()
         .setEverythingCaseInsensitive()
@@ -2008,9 +2011,9 @@ public class SharePointAdaptorTest {
     // This populates the cache, but otherwise doesn't test anything new.
     siteData.setSiteDataSoap(siteDataState1);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
     assertEquals(new Acl.Builder()
         .setEverythingCaseInsensitive()
@@ -2024,7 +2027,7 @@ public class SharePointAdaptorTest {
 
     // Were we able to pick up the new user in the ACLs?
     siteData.setSiteDataSoap(siteDataState2);
-    response = new GetContentsResponse(new ByteArrayOutputStream());
+    response = new RecordingResponse(new ByteArrayOutputStream());
     adaptor.getDocContent(request, response);
     assertEquals(new Acl.Builder()
         .setEverythingCaseInsensitive()
@@ -2082,9 +2085,9 @@ public class SharePointAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
     assertEquals(new Acl.Builder()
         .setEverythingCaseInsensitive()
@@ -2141,9 +2144,9 @@ public class SharePointAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
     assertEquals(new Acl.Builder()
         .setEverythingCaseInsensitive()
@@ -2220,9 +2223,9 @@ public class SharePointAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
     assertEquals(new Acl.Builder()
     .setEverythingCaseInsensitive()
@@ -2260,11 +2263,11 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.getDocContent(request, response);
-    assertTrue(response.isNotFound());
+    assertEquals(State.NOT_FOUND, response.getState());
   }
 
   @Test
@@ -2282,10 +2285,10 @@ public class SharePointAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
           + "AllItems.aspx"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -2341,17 +2344,17 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
           + "AllItems.aspx"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
           new UnsupportedCallable<MemberIdMapping>(),
           new UnsupportedCallable<MemberIdMapping>())
         .getDocContent(request, response);
-    assertTrue(response.isNotFound());
+    assertEquals(State.NOT_FOUND, response.getState());
   }
 
   @Test
@@ -2368,17 +2371,17 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
           + "NonDefault.aspx"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
           new UnsupportedCallable<MemberIdMapping>(),
           new UnsupportedCallable<MemberIdMapping>())
         .getDocContent(request, response);
-    assertTrue(response.isNotFound());
+    assertEquals(State.NOT_FOUND, response.getState());
   }
   
   @Test
@@ -2401,9 +2404,9 @@ public class SharePointAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -2468,9 +2471,9 @@ public class SharePointAdaptorTest {
     new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId(attachmentId));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -2538,16 +2541,16 @@ public class SharePointAdaptorTest {
     new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId(attachmentId));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
           new UnsupportedCallable<MemberIdMapping>(),
           new UnsupportedCallable<MemberIdMapping>())
         .getDocContent(request, response);
-    assertTrue(response.isNotFound());
+    assertEquals(State.NOT_FOUND, response.getState());
   }
 
   @Test
@@ -2594,9 +2597,9 @@ public class SharePointAdaptorTest {
     new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId(attachmentId));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -2625,10 +2628,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
           + "Test Folder/2_.000"), new Date(1336166662000L));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -2782,10 +2785,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
           + "Test Folder/2_.000"), new Date(1336166662000L));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -2940,10 +2943,10 @@ public class SharePointAdaptorTest {
         throw new UnsupportedOperationException("No response expected");
       }      
     };
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
           + "Test Folder/2_.000"), new Date(1336166672000L));    
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -3011,7 +3014,7 @@ public class SharePointAdaptorTest {
           + "Custom%20List/DispForm.aspx?ID=2"),
         response.getDisplayUrl());
     assertEquals(new Date(1336166672000L), response.getLastModified());
-    assertTrue(response.isNoContent());
+    assertEquals(State.NO_CONTENT, response.getState());
   }
 
   @Test
@@ -3036,10 +3039,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List"
           + "/2_.000"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -3110,10 +3113,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List"
           + "/outlookFile.msg"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -3183,10 +3186,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List"
           + "/cs.pdf"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -3236,10 +3239,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
           + "Test Folder/2_.000"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -3283,10 +3286,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
             + "Test Folder/2_.000"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection", siteData,
           mockUserGroupSoap, new UnsupportedPeopleSoap(),
@@ -3391,10 +3394,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
           + "Test Folder"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection",
           siteData, new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
@@ -3544,10 +3547,10 @@ public class SharePointAdaptorTest {
         new UnsupportedActiveDirectoryClientFactory());
     adaptor.init(new MockAdaptorContext(config, pusher));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    GetContentsRequest request = new GetContentsRequest(
+    DocRequest request = new DocRequest(
         new DocId("http://localhost:1/sites/SiteCollection/Lists/Custom List/"
           + "Test Folder"));
-    GetContentsResponse response = new GetContentsResponse(baos);
+    RecordingResponse response = new RecordingResponse(baos);
     adaptor.new SiteAdaptor("http://localhost:1/sites/SiteCollection",
           "http://localhost:1/sites/SiteCollection",
           siteData, new UnsupportedUserGroupSoap(), new UnsupportedPeopleSoap(),
