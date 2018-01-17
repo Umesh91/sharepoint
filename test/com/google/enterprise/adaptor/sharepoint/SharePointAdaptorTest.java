@@ -981,8 +981,7 @@ public class SharePointAdaptorTest {
     adaptor.getDocContent(requestOtherSC, responseOtherSC);
     assertEquals(State.NOT_FOUND, responseOtherSC.getState());
     
-    DocRequest requestRoot= new DocRequest(
-        new DocId(""));
+    DocRequest requestRoot= new DocRequest(new DocId(""));
     RecordingResponse responseRoot = new RecordingResponse(baos);
     adaptor.getDocContent(requestRoot, responseRoot);
     assertEquals(State.NOT_FOUND, responseRoot.getState());
