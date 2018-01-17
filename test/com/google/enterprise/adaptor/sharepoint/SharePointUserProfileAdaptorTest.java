@@ -366,8 +366,7 @@ public class SharePointUserProfileAdaptorTest {
         + "</title></head><body><h1>First &amp; Last</h1></body></html>";
     assertEquals(golden, responseString);
 
-    String responseState = response.getState().toString();
-    assertFalse(responseState.contains(State.NOT_FOUND.toString()));
+    assertFalse(response.getState().equals(State.NOT_FOUND));
     assertEquals("domain\\user1", response.getMetadata().getOneValue(
         "google_social_user_accountname"));
     assertEquals("Value1", response.getMetadata().getOneValue(
