@@ -432,11 +432,10 @@ public class SharePointUserProfileAdaptorTest {
 
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
-
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    
     DocRequest request = new DocRequest(
         new DocId(SharePointUserProfileAdaptor.SOCIAL_ID_PREFIX + "user1"));
-    RecordingResponse response = new RecordingResponse(baos);
+    RecordingResponse response = new RecordingResponse();
     adaptor.getDocContent(request, response);
     assertEquals(State.NOT_FOUND, response.getState());
   }
@@ -456,10 +455,9 @@ public class SharePointUserProfileAdaptorTest {
     RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     adaptor.init(new MockAdaptorContext(config, pusher));
 
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
     DocRequest request = new DocRequest(
         new DocId("user1"));
-    RecordingResponse response = new RecordingResponse(baos);
+    RecordingResponse response = new RecordingResponse();
     adaptor.getDocContent(request, response);
     assertEquals(State.NOT_FOUND, response.getState());
   }
